@@ -83,6 +83,17 @@ src/
 
 ## Recent Changes (Dec 23, 2025)
 
+### Minimap & Easier Difficulty
+- **Minimap** in top-right corner showing:
+  - Walls (gray), portal (purple), weapons (yellow), aliens (red)
+  - Player as green triangle pointing in look direction
+- **Gun pickups** now look like actual guns with body/barrel/handle
+  - Color-coded: orange=Shotgun, cyan=Plasma, red=Rocket
+- **Much easier aliens:**
+  - Health: 15 (was 25), Speed: 0.35 (was 0.6), Damage: 5 (was 8)
+  - Boss: 80 HP (was 150)
+  - Only 2 aliens per wave to start
+
 ### Portal Spawn System & Weapon Pickups
 - **Portal**: Purple swirling portal in top-right corner
 - All aliens spawn from portal and walk towards player
