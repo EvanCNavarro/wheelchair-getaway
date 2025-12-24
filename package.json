@@ -1,0 +1,23 @@
+{
+  "name": "wheelchair-getaway",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "An endless chase game - escape the cop in your wheelchair!",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": ["game", "phaser", "endless-runner"],
+  "author": "Navarro Brothers",
+  "license": "MIT",
+  "dependencies": {
+    "phaser": "^3.90.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.3"
+  }
+}
