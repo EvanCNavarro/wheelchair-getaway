@@ -97,6 +97,7 @@ export class PlayScene extends Phaser.Scene {
 
   // Graphics
   private gameGraphics!: Phaser.GameObjects.Graphics;
+  private minimapGraphics!: Phaser.GameObjects.Graphics;
   private rayDistances: number[] = [];
 
   // UI
@@ -153,6 +154,10 @@ export class PlayScene extends Phaser.Scene {
 
     // Create graphics object for raycasting
     this.gameGraphics = this.add.graphics();
+
+    // Create minimap graphics (drawn on top)
+    this.minimapGraphics = this.add.graphics();
+    this.minimapGraphics.setDepth(80);
 
     // Create UI
     this.createUI(width, height);
@@ -439,6 +444,9 @@ export class PlayScene extends Phaser.Scene {
     // Render aliens on top
     this.renderAliens();
 
+    // Render minimap
+    this.renderMinimap();
+
     // Check wave complete
     if (this.aliens.length === 0) {
       this.wave++;
@@ -579,31 +587,124 @@ export class PlayScene extends Phaser.Scene {
       const bobAmount = Math.sin(time * 0.004 + pickup.bobOffset) * 10;
       const pickupY = height / 2 + pickupSize * 0.3 + bobAmount;
 
-      // Draw glowing pickup box
+      // Draw realistic gun shape
       const glowPulse = Math.sin(time * 0.006) * 0.3 + 0.7;
+      const x = pickup.screenX;
+      const y = pickupY;
+      const s = pickupSize * 0.4;
 
       // Outer glow
-      this.gameGraphics.fillStyle(0xffff00, glowPulse * 0.3);
-      this.gameGraphics.fillCircle(pickup.screenX, pickupY, pickupSize * 0.6);
+      this.gameGraphics.fillStyle(0x00ff00, glowPulse * 0.4);
+      this.gameGraphics.fillCircle(x, y, s * 1.5);
 
-      // Box
-      this.gameGraphics.fillStyle(0x444400, 0.9);
-      this.gameGraphics.fillRect(
-        pickup.screenX - pickupSize * 0.3,
-        pickupY - pickupSize * 0.2,
-        pickupSize * 0.6,
-        pickupSize * 0.4
-      );
+      // Gun body (rectangle)
+      this.gameGraphics.fillStyle(0x333333, 1);
+      this.gameGraphics.fillRect(x - s * 0.8, y - s * 0.15, s * 1.6, s * 0.3);
 
-      // Weapon icon highlight
-      this.gameGraphics.fillStyle(0xffff00, 0.8);
-      this.gameGraphics.fillRect(
-        pickup.screenX - pickupSize * 0.25,
-        pickupY - pickupSize * 0.15,
-        pickupSize * 0.5,
-        pickupSize * 0.3
+      // Gun barrel
+      this.gameGraphics.fillStyle(0x222222, 1);
+      this.gameGraphics.fillRect(x + s * 0.3, y - s * 0.1, s * 0.8, s * 0.2);
+
+      // Gun handle
+      this.gameGraphics.fillStyle(0x4a3728, 1);
+      this.gameGraphics.fillRect(x - s * 0.3, y + s * 0.1, s * 0.25, s * 0.4);
+
+      // Gun details (trigger guard)
+      this.gameGraphics.fillStyle(0x444444, 1);
+      this.gameGraphics.fillCircle(x - s * 0.1, y + s * 0.15, s * 0.1);
+
+      // Weapon type indicator color
+      let indicatorColor = 0xffff00;
+      if (pickup.weapon.name === 'Shotgun') indicatorColor = 0xff8800;
+      else if (pickup.weapon.name === 'Plasma') indicatorColor = 0x00ffff;
+      else if (pickup.weapon.name === 'Rocket') indicatorColor = 0xff0000;
+
+      // Glowing indicator
+      this.gameGraphics.fillStyle(indicatorColor, glowPulse);
+      this.gameGraphics.fillCircle(x - s * 0.5, y, s * 0.12);
+    }
+  }
+
+  private renderMinimap(): void {
+    const { width } = this.scale;
+    this.minimapGraphics.clear();
+
+    // Minimap settings
+    const mapSize = 100;
+    const mapX = width - mapSize - 15;
+    const mapY = 50;
+    const scale = mapSize / (this.map.length * TILE_SIZE);
+
+    // Background
+    this.minimapGraphics.fillStyle(0x000000, 0.7);
+    this.minimapGraphics.fillRoundedRect(mapX - 5, mapY - 5, mapSize + 10, mapSize + 10, 8);
+
+    // Border
+    this.minimapGraphics.lineStyle(2, 0x22ff22, 0.8);
+    this.minimapGraphics.strokeRoundedRect(mapX - 5, mapY - 5, mapSize + 10, mapSize + 10, 8);
+
+    // Draw walls
+    this.minimapGraphics.fillStyle(0x444466, 0.8);
+    for (let y = 0; y < this.map.length; y++) {
+      for (let x = 0; x < this.map[y].length; x++) {
+        if (this.map[y][x] === 1) {
+          this.minimapGraphics.fillRect(
+            mapX + x * TILE_SIZE * scale,
+            mapY + y * TILE_SIZE * scale,
+            TILE_SIZE * scale,
+            TILE_SIZE * scale
+          );
+        }
+      }
+    }
+
+    // Draw portal (purple dot)
+    this.minimapGraphics.fillStyle(0xaa44ff, 1);
+    this.minimapGraphics.fillCircle(
+      mapX + this.portalX * scale,
+      mapY + this.portalY * scale,
+      5
+    );
+
+    // Draw weapon pickups (yellow dots)
+    this.minimapGraphics.fillStyle(0xffff00, 1);
+    for (const pickup of this.weaponPickups) {
+      this.minimapGraphics.fillCircle(
+        mapX + pickup.x * scale,
+        mapY + pickup.y * scale,
+        3
       );
     }
+
+    // Draw aliens (red dots)
+    this.minimapGraphics.fillStyle(0xff0000, 1);
+    for (const alien of this.aliens) {
+      const dotSize = alien.isBoss ? 5 : 3;
+      this.minimapGraphics.fillCircle(
+        mapX + alien.x * scale,
+        mapY + alien.y * scale,
+        dotSize
+      );
+    }
+
+    // Draw player (green triangle showing direction)
+    const playerMapX = mapX + this.playerX * scale;
+    const playerMapY = mapY + this.playerY * scale;
+    const triangleSize = 6;
+
+    // Player direction indicator
+    const tipX = playerMapX + Math.cos(this.playerAngle) * triangleSize * 1.5;
+    const tipY = playerMapY + Math.sin(this.playerAngle) * triangleSize * 1.5;
+    const leftX = playerMapX + Math.cos(this.playerAngle + 2.5) * triangleSize;
+    const leftY = playerMapY + Math.sin(this.playerAngle + 2.5) * triangleSize;
+    const rightX = playerMapX + Math.cos(this.playerAngle - 2.5) * triangleSize;
+    const rightY = playerMapY + Math.sin(this.playerAngle - 2.5) * triangleSize;
+
+    this.minimapGraphics.fillStyle(0x00ff00, 1);
+    this.minimapGraphics.fillTriangle(tipX, tipY, leftX, leftY, rightX, rightY);
+
+    // Minimap label
+    this.minimapGraphics.fillStyle(0x22ff22, 1);
   }
 
   private handleInput(): void {
