@@ -83,6 +83,16 @@ src/
 
 ## Recent Changes (Dec 23, 2025)
 
+### Portal Spawn System & Weapon Pickups
+- **Portal**: Purple swirling portal in top-right corner
+- All aliens spawn from portal and walk towards player
+- Portal warning message when waves spawn
+- **Weapon Pickups**: Glowing yellow boxes on the ground
+  - 4 locations around the map
+  - Shotgun (45 dmg), Plasma (35 dmg), Rocket (80 dmg)
+  - Walk over to collect, auto-equips
+- Player starts in bottom-left, facing portal
+
 ### Mobile Controls Fix for Alien Invasion
 - Added simplified joystick (up/down = move, left/right = turn)
 - Large SHOOT button with auto-aim
