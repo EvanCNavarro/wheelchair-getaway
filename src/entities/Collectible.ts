@@ -1,5 +1,4 @@
 import Phaser from 'phaser';
-import { COLORS } from '../config/gameConfig';
 
 export type CollectibleType = 'boost' | 'coin' | 'shield';
 
@@ -10,8 +9,9 @@ export type CollectibleType = 'boost' | 'coin' | 'shield';
 export class Collectible extends Phaser.GameObjects.Container {
   declare body: Phaser.Physics.Arcade.Body;
   public collectibleType: CollectibleType;
-  private visual: Phaser.GameObjects.Shape;
+  private emoji: Phaser.GameObjects.Text;
   private innerContainer: Phaser.GameObjects.Container;
+  private glowCircle?: Phaser.GameObjects.Arc;
 
   constructor(scene: Phaser.Scene, x: number, y: number, type: CollectibleType) {
     super(scene, x, y);
@@ -21,33 +21,61 @@ export class Collectible extends Phaser.GameObjects.Container {
     this.innerContainer = scene.add.container(0, 0);
     this.add(this.innerContainer);
 
-    // Create visual based on type
+    // Create emoji based on type
+    const emojiStyle = { fontSize: '32px' };
+
     switch (type) {
       case 'boost':
-        // Green arrow pointing up
-        this.visual = scene.add.rectangle(0, 0, 30, 30, COLORS.BOOST);
-        this.visual.setStrokeStyle(2, 0xffffff);
-        this.innerContainer.add(this.visual);
-        // Add arrow indicator
-        const arrow = scene.add.triangle(0, 0, 0, 10, 15, -10, -15, -10, 0x00aa00);
-        this.innerContainer.add(arrow);
+        // Lightning bolt for speed boost
+        this.emoji = scene.add.text(0, 0, '⚡', emojiStyle).setOrigin(0.5);
+        this.innerContainer.add(this.emoji);
+
+        // Add subtle pulsing glow
+        const boostGlow = scene.add.circle(0, 0, 25, 0x00ff00, 0.3);
+        this.innerContainer.addAt(boostGlow, 0);
+        scene.tweens.add({
+          targets: boostGlow,
+          scale: { from: 0.8, to: 1.2 },
+          alpha: { from: 0.4, to: 0.1 },
+          duration: 600,
+          yoyo: true,
+          repeat: -1,
+        });
         break;
 
       case 'coin':
-        // Gold circle
-        this.visual = scene.add.circle(0, 0, 15, COLORS.COIN);
-        this.visual.setStrokeStyle(2, 0xffa500);
-        this.innerContainer.add(this.visual);
+        // Coin emoji
+        this.emoji = scene.add.text(0, 0, '🪙', emojiStyle).setOrigin(0.5);
+        this.innerContainer.add(this.emoji);
+
+        // Spinning effect (scale X to simulate rotation)
+        scene.tweens.add({
+          targets: this.emoji,
+          scaleX: { from: 1, to: -1 },
+          duration: 600,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut',
+        });
         break;
 
       case 'shield':
-        // Cyan hexagon-ish shape (using circle for now)
-        this.visual = scene.add.circle(0, 0, 18, COLORS.SHIELD, 0.7);
-        this.visual.setStrokeStyle(3, 0x00ffff);
-        // Add glow effect
-        const glowEffect = scene.add.circle(0, 0, 22, 0x00ffff, 0.3);
-        this.innerContainer.add(glowEffect);
-        this.innerContainer.add(this.visual);
+        // Shield emoji with glow
+        this.glowCircle = scene.add.circle(0, 0, 28, 0x00ffff, 0.4);
+        this.innerContainer.add(this.glowCircle);
+
+        // Pulsing glow effect
+        scene.tweens.add({
+          targets: this.glowCircle,
+          scale: { from: 1, to: 1.4 },
+          alpha: { from: 0.5, to: 0.1 },
+          duration: 800,
+          yoyo: true,
+          repeat: -1,
+        });
+
+        this.emoji = scene.add.text(0, 0, '🛡️', emojiStyle).setOrigin(0.5);
+        this.innerContainer.add(this.emoji);
         break;
     }
 
@@ -61,24 +89,12 @@ export class Collectible extends Phaser.GameObjects.Container {
       ease: 'Sine.easeInOut',
     });
 
-    // Add rotation for coins
-    if (type === 'coin') {
-      scene.tweens.add({
-        targets: this.visual,
-        scaleX: { from: 1, to: 0.3 },
-        duration: 400,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut',
-      });
-    }
-
     // Add to scene and enable physics
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
     // Configure physics body
-    this.body.setSize(30, 30);
+    this.body.setSize(40, 40);
     this.body.setAllowGravity(false);
   }
 

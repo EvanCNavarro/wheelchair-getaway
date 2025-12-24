@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { PLAYER_SPEED, COLORS } from '../config/gameConfig';
+import { PLAYER_SPEED } from '../config/gameConfig';
 
 /**
  * Player - The wheelchair that the player controls
@@ -7,7 +7,8 @@ import { PLAYER_SPEED, COLORS } from '../config/gameConfig';
  */
 export class Player extends Phaser.GameObjects.Container {
   declare body: Phaser.Physics.Arcade.Body;
-  private wheelchair: Phaser.GameObjects.Rectangle;
+  private emoji: Phaser.GameObjects.Text;
+  private boostGlow?: Phaser.GameObjects.Arc;
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd?: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key };
 
@@ -22,16 +23,9 @@ export class Player extends Phaser.GameObjects.Container {
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y);
 
-    // Create wheelchair visual (rectangle for now, will be sprite later)
-    this.wheelchair = scene.add.rectangle(0, 0, 40, 60, COLORS.PLAYER);
-    this.wheelchair.setStrokeStyle(2, 0xffffff);
-    this.add(this.wheelchair);
-
-    // Add wheels (small rectangles on sides)
-    const leftWheel = scene.add.rectangle(-18, 10, 8, 20, 0x333333);
-    const rightWheel = scene.add.rectangle(18, 10, 8, 20, 0x333333);
-    this.add(leftWheel);
-    this.add(rightWheel);
+    // Create wheelchair emoji (person in motorized wheelchair)
+    this.emoji = scene.add.text(0, 0, '🧑‍🦼', { fontSize: '48px' }).setOrigin(0.5);
+    this.add(this.emoji);
 
     // Add to scene and enable physics
     scene.add.existing(this);
@@ -39,7 +33,7 @@ export class Player extends Phaser.GameObjects.Container {
 
     // Configure physics body
     this.body.setCollideWorldBounds(true);
-    this.body.setSize(40, 60);
+    this.body.setSize(50, 50);
 
     // Setup keyboard input
     if (scene.input.keyboard) {
@@ -98,14 +92,30 @@ export class Player extends Phaser.GameObjects.Container {
     this.isBoosting = true;
     this.currentSpeed = this.baseSpeed * multiplier;
 
-    // Visual feedback - tint the wheelchair
-    this.wheelchair.setFillStyle(0x00ff00);
+    // Add green glow effect
+    if (!this.boostGlow) {
+      this.boostGlow = this.scene.add.circle(0, 0, 35, 0x00ff00, 0.4);
+      this.addAt(this.boostGlow, 0);
+    }
+    this.boostGlow.setVisible(true);
+
+    // Pulsing glow
+    this.scene.tweens.add({
+      targets: this.boostGlow,
+      scale: { from: 1, to: 1.3 },
+      alpha: { from: 0.5, to: 0.2 },
+      duration: 200,
+      yoyo: true,
+      repeat: Math.floor(duration / 400),
+    });
 
     // Reset after duration
     this.scene.time.delayedCall(duration, () => {
       this.currentSpeed = this.baseSpeed;
       this.isBoosting = false;
-      this.wheelchair.setFillStyle(COLORS.PLAYER);
+      if (this.boostGlow) {
+        this.boostGlow.setVisible(false);
+      }
     });
   }
 
@@ -132,8 +142,9 @@ export class Player extends Phaser.GameObjects.Container {
     this.isSlowed = true;
     this.currentSpeed = this.baseSpeed * (1 - amount);
 
-    // Visual feedback - tint the wheelchair red
-    this.wheelchair.setFillStyle(0xff6666);
+    // Visual feedback - red tint via a red circle behind
+    const slowGlow = this.scene.add.circle(0, 0, 35, 0xff0000, 0.3);
+    this.addAt(slowGlow, 0);
 
     // Reset after duration
     this.scene.time.delayedCall(duration, () => {
@@ -141,9 +152,7 @@ export class Player extends Phaser.GameObjects.Container {
         this.currentSpeed = this.baseSpeed;
       }
       this.isSlowed = false;
-      if (!this.isBoosting) {
-        this.wheelchair.setFillStyle(COLORS.PLAYER);
-      }
+      slowGlow.destroy();
     });
   }
 }

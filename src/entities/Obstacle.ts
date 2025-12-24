@@ -11,50 +11,51 @@ export class Obstacle extends Phaser.GameObjects.Container {
   public obstacleType: ObstacleType;
   public slowdownAmount: number; // How much to slow player (0-1)
   public slowdownDuration: number; // How long the slowdown lasts (ms)
+  private emoji: Phaser.GameObjects.Text;
 
   constructor(scene: Phaser.Scene, x: number, y: number, type: ObstacleType) {
     super(scene, x, y);
     this.obstacleType = type;
 
-    let visual: Phaser.GameObjects.Shape;
+    const emojiStyle = { fontSize: '36px' };
 
     switch (type) {
       case 'pothole':
-        // Dark gray circle
-        visual = scene.add.ellipse(0, 0, 40, 25, 0x222222);
-        visual.setStrokeStyle(2, 0x111111);
+        // Dark hole/circle emoji
+        this.emoji = scene.add.text(0, 0, '🕳️', emojiStyle).setOrigin(0.5);
+        this.add(this.emoji);
         this.slowdownAmount = 0.3;
         this.slowdownDuration = 500;
         break;
 
       case 'cone':
-        // Orange traffic cone (triangle)
-        visual = scene.add.triangle(0, 0, 0, 15, 15, -15, -15, -15, 0xff6600);
-        visual.setStrokeStyle(2, 0xffffff);
-        // Add white stripes
-        const stripe = scene.add.rectangle(0, -5, 20, 4, 0xffffff);
-        this.add(stripe);
+        // Traffic cone emoji
+        this.emoji = scene.add.text(0, 0, '🚧', emojiStyle).setOrigin(0.5);
+        this.add(this.emoji);
         this.slowdownAmount = 0.2;
         this.slowdownDuration = 300;
         break;
 
       case 'puddle':
-        // Blue puddle (water)
-        visual = scene.add.ellipse(0, 0, 50, 30, 0x4444ff, 0.6);
-        visual.setStrokeStyle(1, 0x2222aa);
+        // Water/droplet emoji for puddle
+        this.emoji = scene.add.text(0, 0, '💧', emojiStyle).setOrigin(0.5);
+        this.add(this.emoji);
+
+        // Add a blue circle underneath for puddle effect
+        const puddle = scene.add.ellipse(0, 5, 50, 25, 0x4488ff, 0.5);
+        this.addAt(puddle, 0);
+
         this.slowdownAmount = 0.5;
         this.slowdownDuration = 800;
         break;
     }
-
-    this.add(visual);
 
     // Add to scene and enable physics
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
     // Configure physics body
-    this.body.setSize(40, 30);
+    this.body.setSize(45, 45);
     this.body.setAllowGravity(false);
   }
 
@@ -62,9 +63,17 @@ export class Obstacle extends Phaser.GameObjects.Container {
    * Called when player hits obstacle - plays effect
    */
   onHit(): void {
-    // Flash effect
+    // Shake and flash effect
     this.scene.tweens.add({
       targets: this,
+      x: this.x + 5,
+      duration: 50,
+      yoyo: true,
+      repeat: 3,
+    });
+
+    this.scene.tweens.add({
+      targets: this.emoji,
       alpha: 0.3,
       duration: 100,
       yoyo: true,
