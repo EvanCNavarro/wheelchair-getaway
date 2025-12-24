@@ -11,11 +11,15 @@ export class Collectible extends Phaser.GameObjects.Container {
   declare body: Phaser.Physics.Arcade.Body;
   public collectibleType: CollectibleType;
   private visual: Phaser.GameObjects.Shape;
-  private glowEffect?: Phaser.GameObjects.Shape;
+  private innerContainer: Phaser.GameObjects.Container;
 
   constructor(scene: Phaser.Scene, x: number, y: number, type: CollectibleType) {
     super(scene, x, y);
     this.collectibleType = type;
+
+    // Create inner container for floating animation (so it doesn't fight with scroll)
+    this.innerContainer = scene.add.container(0, 0);
+    this.add(this.innerContainer);
 
     // Create visual based on type
     switch (type) {
@@ -23,15 +27,17 @@ export class Collectible extends Phaser.GameObjects.Container {
         // Green arrow pointing up
         this.visual = scene.add.rectangle(0, 0, 30, 30, COLORS.BOOST);
         this.visual.setStrokeStyle(2, 0xffffff);
+        this.innerContainer.add(this.visual);
         // Add arrow indicator
         const arrow = scene.add.triangle(0, 0, 0, 10, 15, -10, -15, -10, 0x00aa00);
-        this.add(arrow);
+        this.innerContainer.add(arrow);
         break;
 
       case 'coin':
         // Gold circle
         this.visual = scene.add.circle(0, 0, 15, COLORS.COIN);
         this.visual.setStrokeStyle(2, 0xffa500);
+        this.innerContainer.add(this.visual);
         break;
 
       case 'shield':
@@ -39,17 +45,16 @@ export class Collectible extends Phaser.GameObjects.Container {
         this.visual = scene.add.circle(0, 0, 18, COLORS.SHIELD, 0.7);
         this.visual.setStrokeStyle(3, 0x00ffff);
         // Add glow effect
-        this.glowEffect = scene.add.circle(0, 0, 22, 0x00ffff, 0.3);
-        this.add(this.glowEffect);
+        const glowEffect = scene.add.circle(0, 0, 22, 0x00ffff, 0.3);
+        this.innerContainer.add(glowEffect);
+        this.innerContainer.add(this.visual);
         break;
     }
 
-    this.add(this.visual);
-
-    // Add floating animation
+    // Add floating animation to INNER container (not the main container that scrolls)
     scene.tweens.add({
-      targets: this,
-      y: y - 5,
+      targets: this.innerContainer,
+      y: -8,
       duration: 500,
       yoyo: true,
       repeat: -1,
